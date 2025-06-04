@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serpente Retro - Old School Game</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(45deg, #1a1a2e, #16213e);
+            font-family: 'Press Start 2P', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #00ff41;
+            padding: 10px;
+            margin: 0;
+        }
+        
+        .game-container {
+            background: #0f0f23;
+            border: 4px solid #00ff41;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 0 30px rgba(0, 255, 65, 0.3);
+            text-align: center;
+            max-width: 95vw;
+            max-height: 95vh;
+        }
+        
+        .game-header {
+            margin-bottom: 20px;
+        }
+        
+        .title {
+            font-size: clamp(16px, 5vw, 24px);
+            color: #ff6b35;
+            text-shadow: 2px 2px 0px #000;
+            margin-bottom: 10px;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { text-shadow: 2px 2px 0px #000, 0 0 5px #ff6b35; }
+            to { text-shadow: 2px 2px 0px #000, 0 0 20px #ff6b35, 0 0 30px #ff6b35; }
+        }
+        
+        .score {
+            font-size: clamp(10px, 3vw, 14px);
+            color: #00ff41;
+            margin-bottom: 10px;
+        }
+        
+        .canvas-container {
+            border: 3px solid #333;
+            background: #000;
+            margin: 0 auto 15px;
+            position: relative;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+            touch-action: none;
+        }
+        
+        #gameCanvas {
+            display: block;
+            background: linear-gradient(45deg, #001100 25%, transparent 25%), 
+                        linear-gradient(-45deg, #001100 25%, transparent 25%), 
+                        linear-gradient(45deg, transparent 75%, #001100 75%), 
+                        linear-gradient(-45deg, transparent 75%, #001100 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            max-width: 90vw;
+            max-height: 50vh;
+        }
+        
+        .controls {
+            color: #888;
+            font-size: clamp(8px, 2.5vw, 10px);
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        
+        .touch-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+            gap: 10px;
+            max-width: 220px;
+            margin: 15px auto;
+            height: 180px;
+        }
+        
+        .control-btn {
+            background: linear-gradient(145deg, #00ff41, #00aa22);
+            border: 2px solid #00ff41;
+            border-radius: 10px;
+            color: #000;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 24px;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.1s;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .control-btn:active {
+            transform: scale(0.95);
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .control-btn.up {
+            grid-column: 2;
+            grid-row: 1;
+        }
+        
+        .control-btn.left {
+            grid-column: 1;
+            grid-row: 2;
+            font-size: 24px; /* Aggiunto per uniformità */
+        }
+        
+        .control-btn.pause {
+            grid-column: 2;
+            grid-row: 2;
+            background: linear-gradient(145deg, #ff6b35, #cc4422);
+            border-color: #ff6b35;
+            font-size: 18px;
+            padding: 5px;
+        }
+        
+        .control-btn.music {
+            grid-column: 1;
+            grid-row: 1;
+            background: linear-gradient(145deg, #9c88ff, #6c5ce7);
+            border-color: #9c88ff;
+            font-size: 18px;
+            padding: 5px;
+        }
+        
+        .control-btn.right {
+            grid-column: 3;
+            grid-row: 2;
+            font-size: 24px; /* Aggiunto per uniformità */
+        }
+        
+        .control-btn.down {
+            grid-column: 2;
+            grid-row: 3;
+        }
+        
+        .control-btn.speed {
+            grid-column: 3;
+            grid-row: 1;
+            background: linear-gradient(145deg, #ffd700, #ffb300);
+            border-color: #ffd700;
+            font-size: 18px;
+            padding: 5px;
+        }
+        
+        @media (max-width: 480px) {
+            .touch-controls {
+                max-width: 200px;
+                height: 160px;
+            }
+            
+            .control-btn {
+                font-size: 20px;
+            }
+            
+            .control-btn.left,
+            .control-btn.right {
+                font-size: 20px; /* Uniformità su mobile */
+            }
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: #ff4757;
+            padding: 20px;
+            border: 2px solid #ff4757;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+            z-index: 10;
+        }
+        
+        .restart-btn {
+            background: #00ff41;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 15px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        
+        .restart-btn:hover {
+            background: #ff6b35;
+            color: #fff;
+            transform: scale(1.1);
+        }
+        
+        .instructions {
+            color: #666;
+            font-size: clamp(6px, 2vw, 8px);
+            margin-top: 10px;
+            line-height: 1.4;
+        }
+        
+        @media (max-width: 480px) {
+            .game-container {
+                padding: 10px;
+                border-width: 2px;
+            }
+            
+            .title {
+                margin-bottom: 5px;
+            }
+            
+            .score {
+                margin-bottom: 5px;
+            }
+            
+            .canvas-container {
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <div class="title">🐍 SERPENTELLO 🍎</div>
+            <div class="score">Punteggio: <span id="score">0</span> | Record: <span id="highScore">0</span></div>
+        </div>
+        
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="360" height="360"></canvas>
+            <div class="game-over" id="gameOver">
+                <div style="font-size: 16px; margin-bottom: 10px;">GAME OVER!</div>
+                <div style="font-size: 12px; margin-bottom: 10px;">Punteggio Finale: <span id="finalScore">0</span></div>
+                <button class="restart-btn" onclick="resetGame()">RIGIOCA</button>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div>Usa i pulsanti o le frecce per muoverti</div>
+        </div>
+        
+        <div class="touch-controls">
+            <button class="control-btn music" id="musicBtn">🎵</button>
+            <button class="control-btn up" id="upBtn">↑</button>
+            <button class="control-btn speed" id="speedBtn">⚡</button>
+            <button class="control-btn left" id="leftBtn">←</button>
+            <button class="control-btn pause" id="pauseBtn">⏸️</button>
+            <button class="control-btn right" id="rightBtn">→</button>
+            <button class="control-btn down" id="downBtn">↓</button>
+        </div>
+        
+        <div class="instructions">
+            Mangia le mele rosse per crescere! • Evita di toccare i bordi e te stesso
+            <br>Ogni mela vale 10 punti • 🎵 Musica • ⚡ Velocità • Tasto M per audio
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const highScoreElement = document.getElementById('highScore');
+        const gameOverElement = document.getElementById('gameOver');
+        const finalScoreElement = document.getElementById('finalScore');
+
+        // Dimensioni griglia
+        const gridSize = 20;
+        const tileCount = canvas.width / gridSize;
+
+        let snake = [
+            {x: 5, y: 5},
+            {x: 4, y: 5},
+            {x: 3, y: 5}
+        ];
+
+        let dx = 1;
+        let dy = 0;
+        let apple = {x: 15, y: 15};
+        let score = 0;
+        let highScore = localStorage.getItem('snakeHighScore') || 0;
+        let gameRunning = true;
+        let isPaused = false;
+        let gameSpeed = 150;
+        let musicEnabled = true;
+        let audioContext;
+        let backgroundMusic;
+        let eatSound;
+        let gameOverSound;
+
+        // Inizializza audio
+        function initAudio() {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            } catch(e) {
+                console.log('Audio non supportato');
+                musicEnabled = false;
+                return;
+            }
+        }
+
+        // Genera suono di background (8-bit style più vivace)
+        function createBackgroundMusic() {
+            if (!audioContext || !musicEnabled) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Melodia 8-bit più vivace e veloce
+            const notes = [440, 523, 659, 784, 880, 659, 523, 440]; // Scala più vivace
+            let noteIndex = 0;
+            
+            oscillator.type = 'square';
+            oscillator.frequency.value = notes[0];
+            gainNode.gain.value = 0.1;
+            
+            const playNote = () => {
+                if (!musicEnabled || !gameRunning || isPaused) return;
+                oscillator.frequency.setValueAtTime(notes[noteIndex % notes.length], audioContext.currentTime);
+                noteIndex++;
+            };
+            
+            oscillator.start();
+            
+            // Cambia nota ogni 400ms (più veloce)
+            const intervalId = setInterval(() => {
+                if (!musicEnabled || !gameRunning) {
+                    clearInterval(intervalId);
+                    oscillator.stop();
+                    return;
+                }
+                playNote();
+            }, 400);
+            
+            return { oscillator, gainNode, intervalId };
+        }
+
+        // Suono quando si mangia
+        function playEatSound() {
+            if (!audioContext || !musicEnabled) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.type = 'square';
+            oscillator.frequency.value = 800;
+            gainNode.gain.value = 0.2;
+            
+            oscillator.start();
+            oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
+            
+            setTimeout(() => oscillator.stop(), 100);
+        }
+
+        // Suono game over
+        function playGameOverSound() {
+            if (!audioContext || !musicEnabled) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.type = 'sawtooth';
+            oscillator.frequency.value = 200;
+            gainNode.gain.value = 0.3;
+            
+            oscillator.start();
+            oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.5);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.5);
+            
+            setTimeout(() => oscillator.stop(), 500);
+        }
+
+        highScoreElement.textContent = highScore;
+
+        // Inizializza audio
+        initAudio();
+
+        // Controlli touch
+        const upBtn = document.getElementById('upBtn');
+        const downBtn = document.getElementById('downBtn');
+        const leftBtn = document.getElementById('leftBtn');
+        const rightBtn = document.getElementById('rightBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const musicBtn = document.getElementById('musicBtn');
+        const speedBtn = document.getElementById('speedBtn');
+
+        // Eventi touch
+        upBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if(dy !== 1 && gameRunning) { dx = 0; dy = -1; }
+        });
+
+        downBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if(dy !== -1 && gameRunning) { dx = 0; dy = 1; }
+        });
+
+        leftBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if(dx !== 1 && gameRunning) { dx = -1; dy = 0; }
+        });
+
+        rightBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if(dx !== -1 && gameRunning) { dx = 1; dy = 0; }
+        });
+
+        pauseBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if(gameRunning) {
+                isPaused = !isPaused;
+                pauseBtn.textContent = isPaused ? '▶️' : '⏸️';
+            }
+        });
+
+        musicBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            musicEnabled = !musicEnabled;
+            musicBtn.textContent = musicEnabled ? '🎵' : '🔇';
+            if (musicEnabled && gameRunning && !backgroundMusic) {
+                backgroundMusic = createBackgroundMusic();
+            }
+        });
+
+        speedBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (gameRunning && !isPaused) {
+                gameSpeed = gameSpeed > 80 ? Math.max(50, gameSpeed - 20) : 150;
+                speedBtn.textContent = gameSpeed < 100 ? '🚀' : '⚡';
+            }
+        });
+
+        // Eventi click per desktop
+        upBtn.addEventListener('click', () => {
+            if(dy !== 1 && gameRunning) { dx = 0; dy = -1; }
+        });
+
+        downBtn.addEventListener('click', () => {
+            if(dy !== -1 && gameRunning) { dx = 0; dy = 1; }
+        });
+
+        leftBtn.addEventListener('click', () => {
+            if(dx !== 1 && gameRunning) { dx = -1; dy = 0; }
+        });
+
+        rightBtn.addEventListener('click', () => {
+            if(dx !== -1 && gameRunning) { dx = 1; dy = 0; }
+        });
+
+        pauseBtn.addEventListener('click', () => {
+            if(gameRunning) {
+                isPaused = !isPaused;
+                pauseBtn.textContent = isPaused ? '▶️' : '⏸️';
+            }
+        });
+
+        musicBtn.addEventListener('click', () => {
+            musicEnabled = !musicEnabled;
+            musicBtn.textContent = musicEnabled ? '🎵' : '🔇';
+            if (musicEnabled && gameRunning && !backgroundMusic) {
+                backgroundMusic = createBackgroundMusic();
+            }
+        });
+
+        speedBtn.addEventListener('click', () => {
+            if (gameRunning && !isPaused) {
+                gameSpeed = gameSpeed > 80 ? Math.max(50, gameSpeed - 20) : 150;
+                speedBtn.textContent = gameSpeed < 100 ? '🚀' : '⚡';
+            }
+        });
+
+        // Prevenire lo zoom su touch
+        document.addEventListener('touchstart', function(e) {
+            if (e.touches.length > 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(e) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+
+        function drawGame() {
+            clearCanvas();
+            moveSnake();
+            drawSnake();
+            drawApple();
+            checkCollision();
+            updateScore();
+        }
+
+        function clearCanvas() {
+            // Sfondo scuro con pattern
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Pattern a griglia sottile
+            ctx.strokeStyle = '#002200';
+            ctx.lineWidth = 0.5;
+            for(let i = 0; i <= tileCount; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * gridSize, 0);
+                ctx.lineTo(i * gridSize, canvas.height);
+                ctx.moveTo(0, i * gridSize);
+                ctx.lineTo(canvas.width, i * gridSize);
+                ctx.stroke();
+            }
+        }
+
+        function drawSnake() {
+            snake.forEach((segment, index) => {
+                // Corpo del serpente con gradiente
+                const gradient = ctx.createRadialGradient(
+                    segment.x * gridSize + gridSize/2, 
+                    segment.y * gridSize + gridSize/2, 
+                    0,
+                    segment.x * gridSize + gridSize/2, 
+                    segment.y * gridSize + gridSize/2, 
+                    gridSize/2
+                );
+                
+                if(index === 0) {
+                    // Testa del serpente
+                    gradient.addColorStop(0, '#00ff41');
+                    gradient.addColorStop(1, '#00cc33');
+                } else {
+                    // Corpo del serpente
+                    gradient.addColorStop(0, '#00aa22');
+                    gradient.addColorStop(1, '#006611');
+                }
+                
+                ctx.fillStyle = gradient;
+                ctx.fillRect(segment.x * gridSize + 1, segment.y * gridSize + 1, gridSize - 2, gridSize - 2);
+                
+                // Bordo pixelato
+                ctx.strokeStyle = index === 0 ? '#00ff41' : '#004411';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(segment.x * gridSize + 1, segment.y * gridSize + 1, gridSize - 2, gridSize - 2);
+                
+                // Occhi per la testa
+                if(index === 0) {
+                    ctx.fillStyle = '#fff';
+                    ctx.fillRect(segment.x * gridSize + 6, segment.y * gridSize + 6, 3, 3);
+                    ctx.fillRect(segment.x * gridSize + 11, segment.y * gridSize + 6, 3, 3);
+                    ctx.fillStyle = '#000';
+                    ctx.fillRect(segment.x * gridSize + 7, segment.y * gridSize + 7, 1, 1);
+                    ctx.fillRect(segment.x * gridSize + 12, segment.y * gridSize + 7, 1, 1);
+                }
+            });
+        }
+
+        function drawApple() {
+            // Mela con effetto 3D
+            const gradient = ctx.createRadialGradient(
+                apple.x * gridSize + 6, 
+                apple.y * gridSize + 6, 
+                0,
+                apple.x * gridSize + gridSize/2, 
+                apple.y * gridSize + gridSize/2, 
+                gridSize/2
+            );
+            gradient.addColorStop(0, '#ff6b6b');
+            gradient.addColorStop(0.7, '#ff4757');
+            gradient.addColorStop(1, '#cc2e3f');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(apple.x * gridSize + 2, apple.y * gridSize + 2, gridSize - 4, gridSize - 4);
+            
+            // Bordo della mela
+            ctx.strokeStyle = '#ff4757';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(apple.x * gridSize + 2, apple.y * gridSize + 2, gridSize - 4, gridSize - 4);
+            
+            // Foglia
+            ctx.fillStyle = '#00aa22';
+            ctx.fillRect(apple.x * gridSize + 8, apple.y * gridSize + 1, 4, 3);
+        }
+
+        function moveSnake() {
+            if(!gameRunning || isPaused) return;
+            
+            const head = {x: snake[0].x + dx, y: snake[0].y + dy};
+            snake.unshift(head);
+
+            // Controlla se ha mangiato la mela
+            if(head.x === apple.x && head.y === apple.y) {
+                score += 10;
+                playEatSound();
+                generateApple();
+                // Aumenta velocità gradualmente
+                if(gameSpeed > 80) {
+                    gameSpeed -= 2;
+                }
+            } else {
+                snake.pop();
+            }
+        }
+
+        function generateApple() {
+            apple = {
+                x: Math.floor(Math.random() * tileCount),
+                y: Math.floor(Math.random() * tileCount)
+            };
+            
+            // Assicurati che la mela non appaia sul serpente
+            for(let segment of snake) {
+                if(segment.x === apple.x && segment.y === apple.y) {
+                    generateApple();
+                    return;
+                }
+            }
+        }
+
+        function checkCollision() {
+            const head = snake[0];
+            
+            // Collisione con i bordi
+            if(head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount) {
+                gameOver();
+                return;
+            }
+            
+            // Collisione con se stesso
+            for(let i = 4; i < snake.length; i++) {
+                if(head.x === snake[i].x && head.y === snake[i].y) {
+                    gameOver();
+                    return;
+                }
+            }
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            playGameOverSound();
+            
+            if (backgroundMusic && backgroundMusic.oscillator) {
+                backgroundMusic.oscillator.stop();
+                backgroundMusic = null;
+            }
+            
+            finalScoreElement.textContent = score;
+            
+            if(score > highScore) {
+                highScore = score;
+                highScoreElement.textContent = highScore;
+                localStorage.setItem('snakeHighScore', highScore);
+            }
+            
+            gameOverElement.style.display = 'block';
+        }
+
+        function updateScore() {
+            scoreElement.textContent = score;
+        }
+
+        function resetGame() {
+            snake = [{x: 5, y: 5}, {x: 4, y: 5}, {x: 3, y: 5}];
+            dx = 1;
+            dy = 0;
+            score = 0;
+            gameSpeed = 150;
+            gameRunning = true;
+            isPaused = false;
+            pauseBtn.textContent = '⏸️';
+            speedBtn.textContent = '⚡';
+            
+            if (backgroundMusic && backgroundMusic.oscillator) {
+                backgroundMusic.oscillator.stop();
+                backgroundMusic = null;
+            }
+            
+            if (musicEnabled) {
+                setTimeout(() => {
+                    backgroundMusic = createBackgroundMusic();
+                }, 100);
+            }
+            
+            generateApple();
+            gameOverElement.style.display = 'none';
+            gameLoop();
+        }
+
+        function gameLoop() {
+            if(gameRunning) {
+                drawGame();
+                setTimeout(gameLoop, gameSpeed);
+            }
+        }
+
+        // Controlli
+        document.addEventListener('keydown', (e) => {
+            if(!gameRunning && e.code !== 'Space') return;
+            
+            switch(e.code) {
+                case 'ArrowUp':
+                    if(dy !== 1) { dx = 0; dy = -1; }
+                    break;
+                case 'ArrowDown':
+                    if(dy !== -1) { dx = 0; dy = 1; }
+                    break;
+                case 'ArrowLeft':
+                    if(dx !== 1) { dx = -1; dy = 0; }
+                    break;
+                case 'ArrowRight':
+                    if(dx !== -1) { dx = 1; dy = 0; }
+                    break;
+                case 'Space':
+                    e.preventDefault();
+                    if(gameRunning) {
+                        isPaused = !isPaused;
+                        pauseBtn.textContent = isPaused ? '▶️' : '⏸️';
+                    }
+                    break;
+                case 'KeyM':
+                    e.preventDefault();
+                    musicEnabled = !musicEnabled;
+                    musicBtn.textContent = musicEnabled ? '🎵' : '🔇';
+                    if (musicEnabled && gameRunning && !backgroundMusic) {
+                        backgroundMusic = createBackgroundMusic();
+                    }
+                    break;
+            }
+        });
+
+        // Avvia il gioco
+        generateApple();
+        
+        // Avvia musica dopo primo input utente
+        document.addEventListener('click', () => {
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            if (musicEnabled && gameRunning && !backgroundMusic) {
+                backgroundMusic = createBackgroundMusic();
+            }
+        }, { once: true });
+        
+        document.addEventListener('touchstart', () => {
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            if (musicEnabled && gameRunning && !backgroundMusic) {
+                backgroundMusic = createBackgroundMusic();
+            }
+        }, { once: true });
+        
+        gameLoop();
+    </script>
+</body>
+</html>
